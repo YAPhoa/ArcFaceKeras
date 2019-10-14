@@ -6,16 +6,22 @@ from keras import backend as K
 __all__=['ArcFaceLoss', 'logit_categorical_crossentropy']
 
 class ArcFaceLoss() :
-    def __init__(self, s=30.0, m=0.5, n_classes=10, **kwargs) :
+    def __init__(self, s=30.0, m=0.5, n_classes=10, sparse=False, **kwargs) :
         self.s = s
         self.cos_m = math.cos(m)
         self.sin_m = math.sin(m)
         self.th = math.cos(math.pi - m)
         self.mm = math.sin(math.pi - m) * m
+        self.sparse = sparse
+        self.n_classes = n_classes
 
     def __call__(self, y_true, y_pred, **kwargs) :
         cosine = tf.cast(y_pred, tf.float32)
-        labels = tf.cast(y_true, tf.float32)
+        if self.sparse : 
+            labels = tf.cast(y_pred, tf.int32)
+            labels = tf.one_hot(y_pred, depth = self.n_classes)
+        else : 
+            labels = tf.cast(y_true, tf.float32)
         sine = tf.sqrt(1-tf.square(cosine))
         phi = cosine * self.cos_m - sine * self.sin_m
         phi = tf.where(cosine > self.th, phi, cosine - self.mm)
